@@ -1,0 +1,20 @@
+{
+  "name": "blipmsgexport",
+  "version": "1.0.0",
+  "description": "Exporta todas as mensagens do blip",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "André Lima",
+  "license": "ISC",
+  "dependencies": {
+    "body-parser": "^1.18.3",
+    "dotenv": "^6.0.0",
+    "express": "^4.16.3",
+    "express-fileupload": "^0.4.0",
+    "fast-csv": "^2.4.1",
+    "json2csv": "^4.2.1",
+    "request": "^2.88.0"
+  }
+}
