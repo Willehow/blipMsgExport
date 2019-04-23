@@ -148,7 +148,7 @@ exports.get = function(req, res) {
 
                     for(let msg of msgs["resource"]["items"]){
 
-                        let data = new Date(msg.date).toISOString().slice(0, 10) + " " + new Date(msg.date).toTimeString()
+                        let data = new Date(msg.date).toISOString().slice(0, 10) + " " + new Date(msg.date).toTimeString().slice(0, 8)
 
                         if(msg.direction == "sent"){
 
