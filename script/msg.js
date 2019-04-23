@@ -1,45 +1,22 @@
 var json2csv = require('json2csv').parse;
+var request = require('request');
  
 exports.get = function(req, res) {
 
     var fields = [
-        'login',
-        'nome',
-        'email',
-        'msg',
-        'data'
+        "Usuário",
+        "Nome",
+        "Tipo",
+        "Conteúdo",
+        "Estado",
+        "Data",
+        "Email",
+        "IP"
     ]
 
-    var request = require('request');
+    function buildCSV(json){
 
-    var users = getThreads();
-
-    for(var i = 0; i < users["resource"]["items"].length;i++){
-
-        console.log(users["resource"]["items"][i].identity)
-
-        var user = users["resource"]["items"][i].identity
-
-        getMsg(user);
-        
-    }
-
-    buildCSV();
-
-
-    function buildCSV(){
-        var json = [
-
-            {
-            'login': 'f1648',
-            'nome': 'teste',
-            'email': 'teste@teste.com',
-            'msg': 'testando essa mensagem',
-            'data': '2019-04-12'
-            }
-        ]
-
-        var opt = { fields, delimiter: ';', quote: ""}
+        var opt = { fields, delimiter: ';', quote: "", withBOM: true}
 
         var csv = json2csv(json, opt);
 
@@ -49,79 +26,191 @@ exports.get = function(req, res) {
         res.send(csv);
     }
 
-    function getThreads(){
+    async function getThreads(){
 
         var jsonBlip = {  
             "id": generateUUID(),
             "method": "get",
-            "uri": "/threads?$take=50"
+            "uri": "/threads?$take=3"
         }
 
         //Lets configure and request
-        request({
-            url: 'https://msging.net/commands', //URL to hit
-            method: 'POST', // specify the request type
-            headers: { // speciyfy the headers
-                'Content-Type': 'application/json',
-                'Authorization': 'Key cmgyOnJ4SmU1MktKbnRjWDhRRWRhQmdH'
-            },
-            body: JSON.stringify(jsonBlip) //Set the body as a string
-        }, function(error, response, body){
-            if(error) {
-                console.log(error);
-            } else {
-                //console.log(response.statusCode, body);
+        return new Promise((resolve, reject) => { 
+            request({
+                url: 'https://msging.net/commands', //URL to hit
+                method: 'POST', // specify the request type
+                headers: { // speciyfy the headers
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Key cmgyOnJ4SmU1MktKbnRjWDhRRWRhQmdH'
+                },
+                body: JSON.stringify(jsonBlip) //Set the body as a string
+            }, function(error, response, body){
+                if(error || response.statusCode != 200) {
+                    //console.log(error);
+                    res.send("Erro "+response.statusCode+": "+response.statusMessage);
+                } else {
+                    //console.log(response.statusCode);
 
-                var users = JSON.parse(body)
+                    var users = JSON.parse(body)
 
-                console.log(users["resource"]["items"].length)
+                    //console.log(users["resource"]["items"].length)
+                    
+                    let userIds = new Array();
 
-                return users;
+                    for(let user of users["resource"]["items"]){
 
-                /*
-                for(var i = 0; i < users["resource"]["items"].length;i++){
+                        userIds.push(user.identity)
+                        
+                    }
 
-                    console.log(users["resource"]["items"][i].identity)
-
-                    var user = users["resource"]["items"][i].identity
-
-                    getMsg(user);
+                    resolve(userIds);
                     
                 }
-                */
-            }
+            });
         });
     }
 
-    function getMsg(user){
+    async function getContact(userId){
+
+        var jsonBlip = {  
+            "id": generateUUID(),
+            "method": "get",
+            "uri": "/contacts/"+userId
+        }
+
+        //Lets configure and request
+        return new Promise((resolve, reject) => { 
+            request({
+                url: 'https://msging.net/commands', //URL to hit
+                method: 'POST', // specify the request type
+                headers: { // speciyfy the headers
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Key cmgyOnJ4SmU1MktKbnRjWDhRRWRhQmdH'
+                },
+                body: JSON.stringify(jsonBlip) //Set the body as a string
+            }, function(error, response, body){
+                if(error || response.statusCode != 200) {
+                    //console.log(error);
+                    res.send("Erro "+response.statusCode+": "+response.statusMessage);
+                } else {
+
+                    //console.log(response.statusCode);
+
+                    var contactInfo = JSON.parse(body)
+
+                    let contact = [
+
+                        {
+                            "nome": contactInfo["resource"]["name"],
+                            "email": contactInfo["resource"]["email"],
+                            "ip": contactInfo["resource"]["address"]
+                        }
+                    ]
+
+                    resolve(contact);
+                    
+                }
+            });
+        });
+    }
+
+    async function getMsg(userId, contact){
 
         var jsonBlip2 = {  
             "id": generateUUID(),
             "method": "get",
-            "uri": "/threads/"+user
+            "uri": "/threads/"+userId
         }
 
         //Lets configure and request
-        request({
-            url: 'https://msging.net/commands', //URL to hit
-            method: 'POST', // specify the request type
-            headers: { // speciyfy the headers
-                'Content-Type': 'application/json',
-                'Authorization': 'Key cmgyOnJ4SmU1MktKbnRjWDhRRWRhQmdH'
-            },
-            body: JSON.stringify(jsonBlip2) //Set the body as a string
-        }, function(error, response, body){
-            if(error) {
-                console.log(error);
-            } else {
+        return new Promise((resolve, reject) => { 
+            request({
+                url: 'https://msging.net/commands', //URL to hit
+                method: 'POST', // specify the request type
+                headers: { // speciyfy the headers
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Key cmgyOnJ4SmU1MktKbnRjWDhRRWRhQmdH'
+                },
+                body: JSON.stringify(jsonBlip2) //Set the body as a string
+            }, function(error, response, body){
+                if(error || response.statusCode != 200) {
+                    //console.log(error);
+                    res.send("Erro "+response.statusCode+": "+response.statusMessage);
+                } else {
 
-                //console.log(response.statusCode, body);
+                    //console.log(response.statusCode);
 
-                var msgs = JSON.parse(body)
+                    var msgs = JSON.parse(body)
 
-                console.log(msgs)
+                    //console.log(msgs)
 
-        }});
+                    let jsonMsg = new Array();
+
+                    for(let msg of msgs["resource"]["items"]){
+
+                        let data = new Date(msg.date).toISOString().slice(0, 10) + " " + new Date(msg.date).toTimeString()
+
+                        if(msg.direction == "sent"){
+
+                            jsonMsg.push(
+
+                                {
+                                    "Usuário":userId,
+                                    "Nome": "Maris",
+                                    "Tipo": msg.type,
+                                    "Conteúdo": msg.content,
+                                    "Estado": msg.metadata["#stateName"],
+                                    "Data": data,
+                                    "Email": contact[0].email,
+                                    "IP": contact[0].ip
+                                }
+                            )
+
+                        } else {
+
+                            jsonMsg.push(
+
+                                {
+                                    "Usuário":userId,
+                                    "Nome": contact[0].nome,
+                                    "Tipo": msg.type,
+                                    "Conteúdo": msg.content,
+                                    "Estado": "N/A",
+                                    "Data": data,
+                                    "Email": contact[0].email,
+                                    "IP": contact[0].ip
+                                }
+                            )
+                        }
+                    }
+
+                    resolve(jsonMsg);
+
+                }
+            });
+        });
+    }
+
+    async function main(){
+
+        let userIds = await getThreads()
+
+        let jsonFinal = new Array();
+
+        for(let userId of userIds){
+
+            let contact = await getContact(userId)
+            let msgs = await getMsg(userId, contact)
+            
+            //Unifica as mensagens de todos os usuários
+            for(let msg of msgs){
+
+                jsonFinal.push(msg)
+
+            }
+        }
+
+        buildCSV(jsonFinal)
     }
 
     function generateUUID() { // Public Domain/MIT
@@ -135,4 +224,6 @@ exports.get = function(req, res) {
             return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
         });
     }
+
+    main();
 };
