@@ -14,17 +14,17 @@ app.use(fileUpload());
 //server.listen(3001);
  
 
-app.get('/blip-service', function (req, res) {
+app.get('/', function (req, res) {
   res.sendFile(__dirname + '/public/index.html');
 });
 
-app.get('/blip-service/health', function (req, res) {  
+app.get('/health', function (req, res) {  
   res.send("Staying alive =]");
 
 });
  
 var msg = require('./script/msg.js');
-app.get('/blip-service/msg', msg.get);
+app.get('/msg', msg.get);
 
 
 module.exports = app;
