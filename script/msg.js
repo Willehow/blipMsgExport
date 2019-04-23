@@ -31,7 +31,7 @@ exports.get = function(req, res) {
         var jsonBlip = {  
             "id": generateUUID(),
             "method": "get",
-            "uri": "/threads?$take=3"
+            "uri": "/threads?$take=300"
         }
 
         //Lets configure and request
