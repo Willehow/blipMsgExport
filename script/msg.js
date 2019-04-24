@@ -14,28 +14,33 @@ exports.get = function(req, res) {
         "IP"
     ]
 
-    function buildCSV(json){
+    async function buildCSV(json){
 
-        var opt = { fields, delimiter: ';', quote: "", withBOM: true}
+        return new Promise((resolve, reject) => { 
 
-        var csv = json2csv(json, opt);
+            var opt = { fields, delimiter: ';', quote: "", withBOM: true}
 
-        res.set("Content-Disposition", "attachment;filename=blipmsg.csv");
-        res.set("Content-Type", "application/octet-stream");
+            var csv = json2csv(json, opt);
 
-        res.send(csv);
+            res.set("Content-Disposition", "attachment;filename=blipmsg.csv");
+            res.set("Content-Type", "application/octet-stream");
+
+            //res.send(csv);
+
+            resolve(res.send(csv))
+        });
     }
 
     async function getThreads(){
 
-        var jsonBlip = {  
-            "id": generateUUID(),
-            "method": "get",
-            "uri": "/threads?$take=300"
-        }
-
-        //Lets configure and request
         return new Promise((resolve, reject) => { 
+
+            var jsonBlip = {  
+                "id": generateUUID(),
+                "method": "get",
+                "uri": "/threads?$take=300"
+            }
+
             request({
                 url: 'https://msging.net/commands', //URL to hit
                 method: 'POST', // specify the request type
@@ -70,16 +75,58 @@ exports.get = function(req, res) {
         });
     }
 
+    async function getAllContacts(){
+
+        return new Promise((resolve, reject) => { 
+
+            var jsonBlip = {  
+                "id": generateUUID(),
+                "method": "get",
+                "uri": "/contacts?$take=1000000"
+            }
+
+            request({
+                url: 'https://msging.net/commands', //URL to hit
+                method: 'POST', // specify the request type
+                headers: { // speciyfy the headers
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Key cmgyOnJ4SmU1MktKbnRjWDhRRWRhQmdH'
+                },
+                body: JSON.stringify(jsonBlip) //Set the body as a string
+            }, function(error, response, body){
+                if(error || response.statusCode != 200) {
+                    //console.log(error);
+                    res.send("Erro "+response.statusCode+": "+response.statusMessage);
+                } else {
+
+                    var contacts = JSON.parse(body)
+                    
+                    let contactsInfo = new Array();
+
+                    for(let contact of contacts["resource"]["items"]){
+
+                        if(contact.source != "0mn.io" && contact.group != "Testers"){
+                            contactsInfo.push(contact)
+                        }
+                    }
+
+                    resolve(contactsInfo);
+                    
+                }
+            });
+        });
+    }
+
     async function getContact(userId){
 
-        var jsonBlip = {  
-            "id": generateUUID(),
-            "method": "get",
-            "uri": "/contacts/"+userId
-        }
-
-        //Lets configure and request
         return new Promise((resolve, reject) => { 
+
+            var jsonBlip = {  
+                "id": generateUUID(),
+                "method": "get",
+                "uri": "/contacts/"+userId
+            }
+
             request({
                 url: 'https://msging.net/commands', //URL to hit
                 method: 'POST', // specify the request type
@@ -114,16 +161,16 @@ exports.get = function(req, res) {
         });
     }
 
-    async function getMsg(userId, contact){
+    async function getMsg(contact){
 
-        var jsonBlip2 = {  
-            "id": generateUUID(),
-            "method": "get",
-            "uri": "/threads/"+userId
-        }
-
-        //Lets configure and request
         return new Promise((resolve, reject) => { 
+
+            var jsonBlip2 = {  
+                "id": generateUUID(),
+                "method": "get",
+                "uri": "/threads/"+contact.identity+"?$take=1000"
+            }
+
             request({
                 url: 'https://msging.net/commands', //URL to hit
                 method: 'POST', // specify the request type
@@ -155,14 +202,14 @@ exports.get = function(req, res) {
                             jsonMsg.push(
 
                                 {
-                                    "Usuário":userId,
+                                    "Usuário": contact.identity,
                                     "Nome": "Maris",
                                     "Tipo": msg.type,
                                     "Conteúdo": msg.content,
                                     "Estado": msg.metadata["#stateName"],
                                     "Data": data,
-                                    "Email": contact[0].email,
-                                    "IP": contact[0].ip
+                                    "Email": contact.email,
+                                    "IP": contact.address
                                 }
                             )
 
@@ -171,14 +218,14 @@ exports.get = function(req, res) {
                             jsonMsg.push(
 
                                 {
-                                    "Usuário":userId,
-                                    "Nome": contact[0].nome,
+                                    "Usuário": contact.identity,
+                                    "Nome": contact.name,
                                     "Tipo": msg.type,
                                     "Conteúdo": msg.content,
                                     "Estado": "N/A",
                                     "Data": data,
-                                    "Email": contact[0].email,
-                                    "IP": contact[0].ip
+                                    "Email": contact.email,
+                                    "IP": contact.address
                                 }
                             )
                         }
@@ -193,14 +240,18 @@ exports.get = function(req, res) {
 
     async function main(){
 
-        let userIds = await getThreads()
+        //let userIds = await getThreads()
+        let contacts = await getAllContacts()
 
         let jsonFinal = new Array();
 
-        for(let userId of userIds){
+        for(let contact of contacts){
 
-            let contact = await getContact(userId)
-            let msgs = await getMsg(userId, contact)
+            //res.write(contact.identity.split(".")[0])
+            //console.log(contact.identity.split(".")[0])
+
+            //let contact = await getContact(userId)
+            let msgs = await getMsg(contact)
             
             //Unifica as mensagens de todos os usuários
             for(let msg of msgs){
@@ -210,7 +261,7 @@ exports.get = function(req, res) {
             }
         }
 
-        buildCSV(jsonFinal)
+        await buildCSV(jsonFinal)
     }
 
     function generateUUID() { // Public Domain/MIT
