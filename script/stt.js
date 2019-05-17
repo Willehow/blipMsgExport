@@ -1,5 +1,4 @@
 const fs = require('fs');
-const http = require('http-https')
 const request = require('request')
 const SpeechToTextV1 = require('ibm-watson/speech-to-text/v1');
 
