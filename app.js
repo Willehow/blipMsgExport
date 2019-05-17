@@ -26,5 +26,8 @@ app.get('/health', function (req, res) {
 var msg = require('./script/msg.js');
 app.get('/msg', msg.get);
 
+var stt = require('./script/stt.js');
+app.post('/stt', stt.post);
+
 
 module.exports = app;
