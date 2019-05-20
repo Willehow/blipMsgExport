@@ -10,14 +10,12 @@ const speechToText = new SpeechToTextV1({
 exports.post = function (req, res) {
 
   var audioFile = fs.createWriteStream('audio.ogg');
-  var url = req.body.url;
+  var url = req.body.uri;
   request(url)
     .pipe(audioFile)
     .on('finish', function(){
       const recognizeParams = {
         model: 'pt-BR_NarrowbandModel',
-        //audio: fs.createReadStream('C:\\Users\\f1648\\Downloads\\d1ba1905-bd12-4cc1-b262-d01c939bab38.oga'),
-        //audio: file,
         audio: fs.createReadStream('audio.ogg'),
         content_type: 'audio/ogg'/*,
           word_alternatives_threshold: 0.9,
